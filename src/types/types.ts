@@ -1,0 +1,3 @@
+export type BITS = "128" | "192" | "256";
+export type MODE = "ECB" | "CBC";
+export type OUTPUTFORMAT = "Base64" | "HEX";
