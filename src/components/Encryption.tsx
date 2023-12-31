@@ -1,4 +1,4 @@
-import { BITS, MODE, OUTPUTFORMAT } from "@/types/types";
+import { BITS, FORMAT, MODE } from "@/types/types";
 import AutoFixHighIcon from "@mui/icons-material/AutoFixHigh";
 import {
   Box,
@@ -18,7 +18,7 @@ import { useState } from "react";
 
 const Encryption = () => {
   const [mode, setMode] = useState<MODE>("ECB");
-  const [outputFormat, setOutputFormat] = useState<OUTPUTFORMAT>("Base64");
+  const [outputFormat, setOutputFormat] = useState<FORMAT>("Base64");
   const [bits, setBits] = useState<BITS>("128");
   const [initializationVector, setInitializationVector] = useState<string>("");
   const [plainText, setPlainText] = useState<string>("");
@@ -26,21 +26,19 @@ const Encryption = () => {
   const [cipherText, setCipherText] = useState<string>("");
 
   const handleEncrypt = () => {
-    if (plainText && secretKey) {
-      const key = CryptoJs.enc.Utf8.parse(secretKey);
-      const iv = CryptoJs.enc.Utf8.parse(initializationVector);
-      const cipherText = CryptoJs.AES.encrypt(plainText, key, {
-        keySize: bits,
-        iv,
-        mode: mode === "ECB" ? CryptoJs.mode.ECB : CryptoJs.mode.CBC,
-      });
+    const key = CryptoJs.enc.Utf8.parse(secretKey);
+    const iv = CryptoJs.enc.Utf8.parse(initializationVector);
+    const encryptedText = CryptoJs.AES.encrypt(plainText, key, {
+      keySize: bits,
+      iv,
+      mode: mode === "ECB" ? CryptoJs.mode.ECB : CryptoJs.mode.CBC,
+    });
 
-      setCipherText(
-        cipherText.toString(
-          outputFormat === "HEX" ? CryptoJs.format.Hex : CryptoJs.format.OpenSSL
-        )
-      );
-    }
+    setCipherText(
+      encryptedText.toString(
+        outputFormat === "HEX" ? CryptoJs.format.Hex : CryptoJs.format.OpenSSL
+      )
+    );
   };
   return (
     <Box
@@ -153,7 +151,10 @@ const Encryption = () => {
           color="primary"
           exclusive
           onChange={(evt, value) => {
-            value !== null && setOutputFormat(value);
+            if (value !== null) {
+              setCipherText("");
+              setOutputFormat(value);
+            }
           }}
         >
           <ToggleButton value="Base64">Base64</ToggleButton>
