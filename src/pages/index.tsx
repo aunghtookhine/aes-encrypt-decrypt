@@ -6,10 +6,10 @@ export default function Home() {
   return (
     <Box
       sx={{
-        height: "100vh",
+        height: { xs: "fit-content", sm: "100vh" },
         display: "flex",
+        flexDirection: { xs: "column", sm: "row" },
         justifyContent: "space-around",
-        // alignItems: "center",
         p: 3,
       }}
     >

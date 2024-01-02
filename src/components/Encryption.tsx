@@ -43,11 +43,12 @@ const Encryption = () => {
   return (
     <Box
       sx={{
-        width: "40%",
+        width: { xs: "100%", sm: "40%" },
         height: "100%",
         display: "flex",
         justifyContent: "center",
         flexDirection: "column",
+        mb: { xs: 3, sm: 0 },
       }}
     >
       <Typography variant="h3" sx={{ textAlign: "center", mb: 2 }}>
