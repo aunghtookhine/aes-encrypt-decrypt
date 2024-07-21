@@ -1,121 +1,90 @@
-import { BITS, FORMAT, MODE } from "@/types/types";
-import {
-  Box,
-  Button,
-  TextField,
-  ToggleButton,
-  ToggleButtonGroup,
-  Typography,
-} from "@mui/material";
+import { Record } from "@/types/types";
+import { Box, Button, TextField } from "@mui/material";
 import CryptoJs from "crypto-js";
 import { useState } from "react";
 
-const Decryption = () => {
-  const [mode, setMode] = useState<MODE>("ECB");
-  const [inputFormat, setInputFormat] = useState<FORMAT>();
-  const [bits, setBits] = useState<BITS>();
+import fileDownload from "js-file-download";
+import FileDropZone from "./FileDropZone";
+
+interface Props {
+  records: Record[];
+  setRecords: React.Dispatch<React.SetStateAction<Record[]>>;
+}
+
+const Decryption = ({ records, setRecords }: Props) => {
   const [cipherText, setCipherText] = useState<string>("");
   const [plainText, setPlainText] = useState<string>("");
   const [secretKey, setSecretKey] = useState<string>("");
-  const [initializationVector, setInitializationVector] = useState<string>("");
-  const hexRegex = /^[A-Fa-f0-9]+$/;
+  const [fileData, setFileData] = useState<string>("");
 
   const handleDecrypt = () => {
-    const key = CryptoJs.enc.Utf8.parse(secretKey);
-    const iv = CryptoJs.enc.Utf8.parse(initializationVector);
-    var encryptedText = cipherText;
-
-    if (inputFormat === "HEX") {
-      encryptedText = CryptoJs.enc.Hex.parse(cipherText).toString(
+    try {
+      const start = performance.now();
+      const iv = CryptoJs.enc.Utf8.parse("Lets check quick");
+      const secret = CryptoJs.enc.Utf8.parse(secretKey);
+      const encryptedText = CryptoJs.enc.Hex.parse(cipherText).toString(
         CryptoJs.enc.Base64
       );
+      const decryptedText = CryptoJs.AES.decrypt(encryptedText, secret, {
+        iv,
+        mode: CryptoJs.mode.CBC,
+      });
+      setPlainText(decryptedText.toString(CryptoJs.enc.Utf8));
+      const end = performance.now();
+      const duration = (end - start) / 1000;
+      const newRecord: Record = {
+        fileData: fileData,
+        cryptography: "Decrypt",
+        keyLength: String(secretKey.split("").length * 8),
+        durationsInSec: duration,
+      };
+      setRecords([...records, newRecord]);
+      const fileId = fileData.split(" ")[0].split(".")[0].split("-")[1];
+      fileDownload(
+        decryptedText.toString(CryptoJs.enc.Utf8),
+        `plaintext-${fileId}.txt`
+      );
+    } catch (error) {
+      console.log("Error:", error);
     }
-
-    const decryptedText = CryptoJs.AES.decrypt(encryptedText, key, {
-      keySize: Number(bits) / 32,
-      iv,
-      mode: mode === "CBC" ? CryptoJs.mode.CBC : CryptoJs.mode.ECB,
-    });
-    setPlainText(decryptedText.toString(CryptoJs.enc.Utf8));
   };
+
+  const onCiphertextFileSelected = async (file: File) => {
+    const fileContent = await file.text();
+    setFileData(`${file.name} (${file.size} bytes)`);
+    setCipherText(fileContent);
+  };
+
+  const onPlaintextFileSelected = async (file: File) => {
+    const fileContent = await file.text();
+    setSecretKey(fileContent);
+  };
+
   return (
     <Box
       sx={{
-        width: { xs: "100%", sm: "40%" },
-        height: "100%",
         display: "flex",
         justifyContent: "center",
         flexDirection: "column",
       }}
     >
-      <Typography variant="h3" sx={{ textAlign: "center", mb: 2 }}>
-        AES Decryption
-      </Typography>
-      <TextField
-        label="Cipher Text"
-        fullWidth
-        sx={{ mb: 2 }}
-        value={cipherText}
-        onChange={(evt) => {
-          const isHex = hexRegex.test(evt.target.value);
-          setInputFormat(isHex ? "HEX" : "Base64");
-          setCipherText(evt.target.value);
-        }}
-      />
-
-      <TextField
-        label="Secret Key"
-        fullWidth
-        sx={{ mb: 2 }}
-        value={secretKey}
-        onChange={(evt) => {
-          setSecretKey(evt.target.value);
-          if (evt.target.value.length === 16) {
-            setBits("128");
-          } else if (evt.target.value.length === 24) {
-            setBits("192");
-          } else if (evt.target.value.length === 32) {
-            setBits("256");
-          }
-        }}
-      />
-
-      <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2 }}>
-        <TextField
-          label="Initialization Vector (Optional)"
-          fullWidth
-          sx={{ mr: 1 }}
-          value={initializationVector}
-          onChange={(evt) => setInitializationVector(evt.target.value)}
-          disabled={mode === "ECB"}
+      <Box sx={{ display: "flex", mb: 2 }}>
+        <FileDropZone
+          onFileSelected={onCiphertextFileSelected}
+          text="ciphertext"
         />
-        <ToggleButtonGroup
-          value={mode}
-          exclusive
-          onChange={(evt, value) => {
-            if (value !== null) {
-              setMode(value);
-              setInitializationVector("");
-            }
-          }}
-        >
-          <ToggleButton value="ECB">ECB</ToggleButton>
-          <ToggleButton value="CBC">CBC</ToggleButton>
-        </ToggleButtonGroup>
       </Box>
-      <TextField
-        label="Plain Text"
-        sx={{ mb: 2 }}
-        value={plainText}
-        onChange={(evt) => setPlainText(evt.target.value)}
-      />
-
+      <Box sx={{ display: "flex", mb: 2 }}>
+        <FileDropZone
+          onFileSelected={onPlaintextFileSelected}
+          text="secret key"
+        />
+      </Box>
+      <TextField label="Plaintext" sx={{ mb: 2 }} value={plainText} />
       <Button
         variant="outlined"
         onClick={handleDecrypt}
-        disabled={
-          !cipherText || !secretKey || (mode === "CBC" && !initializationVector)
-        }
+        disabled={!cipherText || !secretKey}
       >
         Decrypt
       </Button>

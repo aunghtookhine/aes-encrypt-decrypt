@@ -1,4 +1,4 @@
-import { BITS, FORMAT, MODE } from "@/types/types";
+import { BITS, Record } from "@/types/types";
 import AutoFixHighIcon from "@mui/icons-material/AutoFixHigh";
 import {
   Box,
@@ -8,57 +8,86 @@ import {
   MenuItem,
   Select,
   TextField,
-  ToggleButton,
-  ToggleButtonGroup,
-  Typography,
 } from "@mui/material";
-import { randomBytes } from "crypto";
 import CryptoJs from "crypto-js";
+import cryptoRandomString from "crypto-random-string";
+import fileDownload from "js-file-download";
 import { useState } from "react";
+import FileDropZone from "./FileDropZone";
 
-const Encryption = () => {
-  const [mode, setMode] = useState<MODE>("ECB");
-  const [outputFormat, setOutputFormat] = useState<FORMAT>("Base64");
+interface Props {
+  records: Record[];
+  setRecords: React.Dispatch<React.SetStateAction<Record[]>>;
+}
+
+const Encryption = ({ records, setRecords }: Props) => {
   const [bits, setBits] = useState<BITS>("128");
-  const [initializationVector, setInitializationVector] = useState<string>("");
   const [plainText, setPlainText] = useState<string>("");
   const [secretKey, setSecretKey] = useState<string>("");
   const [cipherText, setCipherText] = useState<string>("");
+  const [fileData, setFileData] = useState<string>("");
+
+  const onFileSelected = async (file: File) => {
+    const fileContent = await file.text();
+    setFileData(`${file.name} (${file.size} bytes)`);
+    setPlainText(fileContent);
+  };
+
+  const getDelay = (bits: BITS): number => {
+    switch (bits) {
+      case "128":
+        return 100;
+      case "192":
+        return 200;
+      case "256":
+        return 300;
+      default:
+        return 0;
+    }
+  };
 
   const handleEncrypt = () => {
-    const key = CryptoJs.enc.Utf8.parse(secretKey);
-    const iv = CryptoJs.enc.Utf8.parse(initializationVector);
-    const encryptedText = CryptoJs.AES.encrypt(plainText, key, {
-      keySize: bits,
-      iv,
-      mode: mode === "ECB" ? CryptoJs.mode.ECB : CryptoJs.mode.CBC,
-    });
-
-    setCipherText(
-      encryptedText.toString(
-        outputFormat === "HEX" ? CryptoJs.format.Hex : CryptoJs.format.OpenSSL
-      )
-    );
+    try {
+      const start = performance.now();
+      const key = CryptoJs.enc.Utf8.parse(secretKey);
+      const iv = CryptoJs.enc.Utf8.parse("Lets check quick");
+      const encryptedText = CryptoJs.AES.encrypt(plainText, key, {
+        keySize: bits,
+        iv,
+        mode: CryptoJs.mode.CBC,
+      });
+      setCipherText(encryptedText.toString(CryptoJs.format.Hex));
+      const end = performance.now();
+      const duration = (end - start) / 1000;
+      const newRecord: Record = {
+        fileData: fileData,
+        cryptography: "Encrypt",
+        keyLength: bits,
+        durationsInSec: duration,
+      };
+      setRecords([...records, newRecord]);
+      const uniqueId = cryptoRandomString({ length: 10, type: "numeric" });
+      fileDownload(
+        encryptedText.toString(CryptoJs.format.Hex),
+        `ciphertext-${uniqueId}.txt`
+      );
+      fileDownload(secretKey, `secret-${uniqueId}.txt`);
+    } catch (error) {
+      console.log("Error:", error);
+    }
   };
   return (
     <Box
       sx={{
-        width: { xs: "100%", sm: "40%" },
-        height: "100%",
         display: "flex",
         justifyContent: "center",
         flexDirection: "column",
         mb: { xs: 3, sm: 0 },
       }}
     >
-      <Typography variant="h3" sx={{ textAlign: "center", mb: 2 }}>
-        AES Encryption
-      </Typography>
-      <TextField
-        label="Plain Text"
-        sx={{ mb: 2 }}
-        onChange={(evt) => setPlainText(evt.target.value)}
-      />
+      <Box sx={{ display: "flex", mb: 2 }}>
+        <FileDropZone onFileSelected={onFileSelected} text="plaintext" />
+      </Box>
       <Box sx={{ display: "flex", mb: 2 }}>
         <TextField
           label="Secret Key"
@@ -73,11 +102,11 @@ const Encryption = () => {
                   sx={{ mr: 1 }}
                   onClick={() => {
                     if (bits === "128") {
-                      setSecretKey(randomBytes(8).toString("hex"));
+                      setSecretKey(cryptoRandomString({ length: 16 }));
                     } else if (bits === "192") {
-                      setSecretKey(randomBytes(12).toString("hex"));
+                      setSecretKey(cryptoRandomString({ length: 24 }));
                     } else {
-                      setSecretKey(randomBytes(16).toString("hex"));
+                      setSecretKey(cryptoRandomString({ length: 32 }));
                     }
                   }}
                 >
@@ -93,6 +122,7 @@ const Encryption = () => {
           onChange={(evt) => {
             setBits(evt.target.value as BITS);
             setSecretKey("");
+            setCipherText("");
           }}
         >
           <MenuItem value={"128"}>128 Bits</MenuItem>
@@ -100,74 +130,13 @@ const Encryption = () => {
           <MenuItem value={"256"}>256 Bits</MenuItem>
         </Select>
       </Box>
-
-      <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2 }}>
-        <TextField
-          disabled={mode === "ECB" ? true : false}
-          label="Initialization Vector (Optional)"
-          value={initializationVector}
-          fullWidth
-          sx={{ mr: 1 }}
-          InputProps={{
-            readOnly: true,
-            endAdornment: (
-              <InputAdornment position="end">
-                <IconButton
-                  disabled={mode === "ECB" ? true : false}
-                  sx={{ mr: 1 }}
-                  onClick={() =>
-                    setInitializationVector(randomBytes(8).toString("hex"))
-                  }
-                >
-                  <AutoFixHighIcon />
-                </IconButton>
-              </InputAdornment>
-            ),
-          }}
-        />
-        <ToggleButtonGroup
-          color="primary"
-          value={mode}
-          exclusive
-          onChange={(evt, value) => {
-            if (value !== null) {
-              setInitializationVector("");
-              setMode(value);
-            }
-          }}
-        >
-          <ToggleButton value="ECB">ECB</ToggleButton>
-          <ToggleButton value="CBC">CBC</ToggleButton>
-        </ToggleButtonGroup>
-      </Box>
       <Box sx={{ display: "flex", mb: 2 }}>
-        <TextField
-          label="Cipher Text"
-          value={cipherText}
-          fullWidth
-          sx={{ mr: 1 }}
-        />
-        <ToggleButtonGroup
-          value={outputFormat}
-          color="primary"
-          exclusive
-          onChange={(evt, value) => {
-            if (value !== null) {
-              setCipherText("");
-              setOutputFormat(value);
-            }
-          }}
-        >
-          <ToggleButton value="Base64">Base64</ToggleButton>
-          <ToggleButton value="HEX">HEX</ToggleButton>
-        </ToggleButtonGroup>
+        <TextField label="Ciphertext" value={cipherText} fullWidth />
       </Box>
       <Button
         variant="outlined"
         onClick={handleEncrypt}
-        disabled={
-          !plainText || !secretKey || (mode === "CBC" && !initializationVector)
-        }
+        disabled={!plainText || !secretKey}
       >
         Encrypt
       </Button>

@@ -14,9 +14,12 @@
     "@mui/icons-material": "^5.15.2",
     "@mui/material": "^5.15.2",
     "crypto-js": "^4.2.0",
+    "crypto-random-string": "^5.0.0",
+    "js-file-download": "^0.4.12",
     "next": "14.0.4",
     "react": "^18",
-    "react-dom": "^18"
+    "react-dom": "^18",
+    "react-dropzone": "^14.2.3"
   },
   "devDependencies": {
     "@types/crypto-js": "^4.2.1",
