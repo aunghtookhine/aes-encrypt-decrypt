@@ -23,7 +23,6 @@ const FileDropZone = ({ onFileSelected, text }: Props) => {
     maxFiles: 1,
     accept: {
       "text/plain": [".txt"],
-      "application/pdf": [".pdf"],
       "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
         [".docx"],
     },
