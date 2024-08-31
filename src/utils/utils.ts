@@ -20,10 +20,10 @@ const extractTextFromDocx = async (file: File): Promise<string> => {
   try {
     const arrayBuffer = await file.arrayBuffer();
     const result = await mammoth.extractRawText({ arrayBuffer });
-    return result.value;
-    // .split("\n")
-    // .filter((line) => line.trim() !== "")
-    // .join("\n");
+    return result.value
+      .split("\n")
+      .filter((line) => line.trim() !== "")
+      .join("\n");
   } catch (error) {
     console.error("Error extracting text from .docx file:", error);
     throw error;
