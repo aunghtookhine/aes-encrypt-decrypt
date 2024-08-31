@@ -15,7 +15,10 @@
     "@mui/material": "^5.15.2",
     "crypto-js": "^4.2.0",
     "crypto-random-string": "^5.0.0",
+    "docx": "^8.5.0",
+    "file-saver": "^2.0.5",
     "js-file-download": "^0.4.12",
+    "mammoth": "^1.8.0",
     "next": "14.0.4",
     "react": "^18",
     "react-dom": "^18",
@@ -23,11 +26,17 @@
   },
   "devDependencies": {
     "@types/crypto-js": "^4.2.1",
+    "@types/file-saver": "^2.0.7",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
     "eslint": "^8",
     "eslint-config-next": "14.0.4",
     "typescript": "^5"
+  },
+  "browser": {
+    "fs": false,
+    "os": false,
+    "path": false
   }
 }

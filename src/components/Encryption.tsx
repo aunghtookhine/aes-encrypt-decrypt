@@ -1,4 +1,5 @@
 import { BITS, Record } from "@/types/types";
+import { downloadDocx, extractContent } from "@/utils/utils";
 import AutoFixHighIcon from "@mui/icons-material/AutoFixHigh";
 import {
   Box,
@@ -26,27 +27,16 @@ const Encryption = ({ records, setRecords }: Props) => {
   const [secretKey, setSecretKey] = useState<string>("");
   const [cipherText, setCipherText] = useState<string>("");
   const [fileData, setFileData] = useState<string>("");
+  const [fileType, setFileType] = useState<string>("");
 
   const onFileSelected = async (file: File) => {
-    const fileContent = await file.text();
+    const fileContent = await extractContent(file);
     setFileData(`${file.name} (${file.size} bytes)`);
     setPlainText(fileContent);
+    setFileType(file.type);
   };
 
-  const getDelay = (bits: BITS): number => {
-    switch (bits) {
-      case "128":
-        return 100;
-      case "192":
-        return 200;
-      case "256":
-        return 300;
-      default:
-        return 0;
-    }
-  };
-
-  const handleEncrypt = () => {
+  const handleEncrypt = async () => {
     try {
       const start = performance.now();
       const key = CryptoJs.enc.Utf8.parse(secretKey);
@@ -67,10 +57,21 @@ const Encryption = ({ records, setRecords }: Props) => {
       };
       setRecords([...records, newRecord]);
       const uniqueId = cryptoRandomString({ length: 10, type: "numeric" });
-      fileDownload(
-        encryptedText.toString(CryptoJs.format.Hex),
-        `ciphertext-${uniqueId}.txt`
-      );
+
+      if (fileType === "text/plain") {
+        fileDownload(
+          encryptedText.toString(CryptoJs.format.Hex),
+          `ciphertext-${uniqueId}.txt`
+        );
+      } else if (
+        fileType ===
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+      ) {
+        downloadDocx(
+          encryptedText.toString(CryptoJs.format.Hex),
+          `ciphertext-${uniqueId}.docx`
+        );
+      }
       fileDownload(secretKey, `secret-${uniqueId}.txt`);
     } catch (error) {
       console.log("Error:", error);

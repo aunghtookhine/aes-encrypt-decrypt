@@ -1,3 +1,4 @@
+import { extractContent } from "@/utils/utils";
 import { Box, TextField } from "@mui/material";
 import { useState } from "react";
 import { useDropzone } from "react-dropzone";
@@ -9,8 +10,11 @@ interface Props {
 
 const FileDropZone = ({ onFileSelected, text }: Props) => {
   const [file, setFile] = useState<File | null>(null);
-  const onDrop = (acceptedFiles: File[]) => {
+  const [fileContent, setFileContent] = useState<string>("");
+  const onDrop = async (acceptedFiles: File[]) => {
     setFile(acceptedFiles[0]);
+    const content = await extractContent(acceptedFiles[0]);
+    setFileContent(content);
     onFileSelected(acceptedFiles[0]);
   };
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -19,6 +23,9 @@ const FileDropZone = ({ onFileSelected, text }: Props) => {
     maxFiles: 1,
     accept: {
       "text/plain": [".txt"],
+      "application/pdf": [".pdf"],
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
+        [".docx"],
     },
   });
   return (
@@ -33,7 +40,7 @@ const FileDropZone = ({ onFileSelected, text }: Props) => {
         }}
         value={
           file
-            ? file.name
+            ? fileContent
             : isDragActive
             ? "Drop the file here."
             : `Drag drop your ${text} here, or click to select files.`

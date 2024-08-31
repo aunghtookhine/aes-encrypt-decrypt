@@ -3,6 +3,7 @@ import { Box, Button, TextField } from "@mui/material";
 import CryptoJs from "crypto-js";
 import { useState } from "react";
 
+import { downloadDocx, extractContent } from "@/utils/utils";
 import fileDownload from "js-file-download";
 import FileDropZone from "./FileDropZone";
 
@@ -16,6 +17,7 @@ const Decryption = ({ records, setRecords }: Props) => {
   const [plainText, setPlainText] = useState<string>("");
   const [secretKey, setSecretKey] = useState<string>("");
   const [fileData, setFileData] = useState<string>("");
+  const [fileType, setFileType] = useState<string>("");
 
   const handleDecrypt = () => {
     try {
@@ -40,22 +42,34 @@ const Decryption = ({ records, setRecords }: Props) => {
       };
       setRecords([...records, newRecord]);
       const fileId = fileData.split(" ")[0].split(".")[0].split("-")[1];
-      fileDownload(
-        decryptedText.toString(CryptoJs.enc.Utf8),
-        `plaintext-${fileId}.txt`
-      );
+
+      if (fileType === "text/plain") {
+        fileDownload(
+          decryptedText.toString(CryptoJs.enc.Utf8),
+          `plaintext-${fileId}.txt`
+        );
+      } else if (
+        fileType ===
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+      ) {
+        downloadDocx(
+          decryptedText.toString(CryptoJs.enc.Utf8),
+          `plaintext-${fileId}.docx`
+        );
+      }
     } catch (error) {
       console.log("Error:", error);
     }
   };
 
   const onCiphertextFileSelected = async (file: File) => {
-    const fileContent = await file.text();
+    const fileContent = await extractContent(file);
     setFileData(`${file.name} (${file.size} bytes)`);
     setCipherText(fileContent);
+    setFileType(file.type);
   };
 
-  const onPlaintextFileSelected = async (file: File) => {
+  const onSecretKeyFileSelected = async (file: File) => {
     const fileContent = await file.text();
     setSecretKey(fileContent);
   };
@@ -76,7 +90,7 @@ const Decryption = ({ records, setRecords }: Props) => {
       </Box>
       <Box sx={{ display: "flex", mb: 2 }}>
         <FileDropZone
-          onFileSelected={onPlaintextFileSelected}
+          onFileSelected={onSecretKeyFileSelected}
           text="secret key"
         />
       </Box>
